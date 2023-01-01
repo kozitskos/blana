@@ -17,7 +17,7 @@ import asyncio
 from uuid import UUID
 from fastapi.security import OAuth2PasswordBearer
 
-from app import schemas, crud, models
+from app import schemas, models
 from app.database import engine, SessionLocal
 from app.deps import get_current_user, oauth2_scheme
 
@@ -26,7 +26,13 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 from app.controllers import note_controller, feedback_controller, auth_controller, summary_controller
+from dotenv import load_dotenv
+import os
 
+load_dotenv(".env.local")
+load_dotenv(".env", override=False)
+
+database = os.getenv("SQLALCHEMY_DATABASE_URL")
 
 
 app = FastAPI()
