@@ -51,23 +51,27 @@ async def disconnect(sid):
 @sio.event
 async def message(sid, data):
     print("Received message:", data)
-    response = await send_and_receive_message(data)
-    await sio.emit('response', response, sid=sid)
+    await send_message(data)
+    await receive_message(sid)
 
-async def send_and_receive_message(message):
+async def send_message(message):
     async with rabbitmq_connection.channel() as channel:
         # Publish the message to the request queue
         await channel.default_exchange.publish(
             aio_pika.Message(body=message.encode()),
             routing_key=REQUEST_QUEUE
         )
-        
+
+async def receive_message(sid):
+    async with rabbitmq_connection.channel() as channel:
         # Consume the message from the response queue
         response_queue = await channel.declare_queue(RESPONSE_QUEUE, durable=True)
         async with response_queue.iterator() as queue_iter:
             async for message in queue_iter:
                 async with message.process():
-                    return message.body.decode()
+                    response = message.body.decode()
+                    await sio.emit('response', response, sid=sid)
+                    return
 
 if __name__ == "__main__":
     import uvicorn
