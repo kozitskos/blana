@@ -19,7 +19,7 @@ RABBITMQ_URL = "amqp://guest:guest@localhost/"
 
 # Queue names
 REQUEST_QUEUE = "task_queue"
-RESPONSE_QUEUE = "response_queue"
+RESPONSE_QUEUE_PREFIX = "response_queue_"
 
 # Global variable for the RabbitMQ connection
 rabbitmq_connection = None
@@ -29,7 +29,6 @@ async def setup_rabbitmq():
     rabbitmq_connection = await aio_pika.connect_robust(RABBITMQ_URL)
     channel = await rabbitmq_connection.channel()
     await channel.declare_queue(REQUEST_QUEUE, durable=True)
-    await channel.declare_queue(RESPONSE_QUEUE, durable=True)
 
 @app.on_event("startup")
 async def on_startup():
@@ -43,25 +42,35 @@ async def on_shutdown():
 @sio.event
 async def connect(sid, environ):
     print("Client connected:", sid)
+    await create_response_queue(sid)
 
 @sio.event
 async def disconnect(sid):
     print("Client disconnected:", sid)
+    await delete_response_queue(sid)
 
 @sio.event
 async def message(sid, data):
     print("Received message:", data)
-    await send_message(data)
+    await send_message(data, sid)
     await receive_message(sid)
 
-async def send_message(message):
+async def create_response_queue(sid):
+    async with rabbitmq_connection.channel() as channel:
+        await channel.declare_queue(RESPONSE_QUEUE_PREFIX + sid, durable=True)
+
+async def delete_response_queue(sid):
+    async with rabbitmq_connection.channel() as channel:
+        await channel.queue_delete(RESPONSE_QUEUE_PREFIX + sid)
+
+async def send_message(message, sid):
     async with rabbitmq_connection.channel() as channel:
         # Publish the message to the request queue
         await channel.default_exchange.publish(
             aio_pika.Message(
                 body=message.encode(),
                 delivery_mode=aio_pika.DeliveryMode.PERSISTENT,  # Persist message
-                reply_to=RESPONSE_QUEUE
+                reply_to=RESPONSE_QUEUE_PREFIX + sid
             ),
             routing_key=REQUEST_QUEUE
         )
@@ -69,7 +78,7 @@ async def send_message(message):
 async def receive_message(sid):
     async with rabbitmq_connection.channel() as channel:
         # Consume the message from the response queue
-        response_queue = await channel.declare_queue(RESPONSE_QUEUE, durable=True)
+        response_queue = await channel.declare_queue(RESPONSE_QUEUE_PREFIX + sid, durable=True)
         async with response_queue.iterator() as queue_iter:
             async for message in queue_iter:
                 async with message.process():
