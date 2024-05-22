@@ -52,7 +52,7 @@ async def disconnect(sid):
 async def message(sid, data):
     print("Received message:", data)
     response = await send_and_receive_message(data)
-    await sio.emit('response', response, room=sid)
+    await sio.emit('response', response, sid=sid)
 
 async def send_and_receive_message(message):
     async with rabbitmq_connection.channel() as channel:
