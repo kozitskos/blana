@@ -58,7 +58,11 @@ async def send_message(message):
     async with rabbitmq_connection.channel() as channel:
         # Publish the message to the request queue
         await channel.default_exchange.publish(
-            aio_pika.Message(body=message.encode()),
+            aio_pika.Message(
+                body=message.encode(),
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,  # Persist message
+                reply_to=RESPONSE_QUEUE
+            ),
             routing_key=REQUEST_QUEUE
         )
 
@@ -70,7 +74,7 @@ async def receive_message(sid):
             async for message in queue_iter:
                 async with message.process():
                     response = message.body.decode()
-                    await sio.emit('response', response, sid=sid)
+                    await sio.emit('response', response, to=sid)
                     return
 
 if __name__ == "__main__":
