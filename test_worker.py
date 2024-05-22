@@ -12,13 +12,29 @@ class TaskProcessor:
         self.channel.queue_declare(queue=self.queue_name, durable=True)
         self.channel.basic_qos(prefetch_count=1)
 
+        # Separate connection and channel for sending responses
+        self.response_connection = pika.BlockingConnection(pika.ConnectionParameters(self.rabbitmq_host))
+        self.response_channel = self.response_connection.channel()
+
     def process_task(self, body):
         print(f" [x] Received {body}")
-        work_time = random.randint(1, 10)
+        work_time = random.randint(1, 1)
         print(f" [x] Will be processed in {work_time} seconds")
         time.sleep(work_time)
         print(f" [x] Done in {work_time} seconds")
-        return True
+        return f"Processed {body.decode()}"
+        
+
+    def send_response(self, response, properties):
+        self.response_channel.queue_declare(queue=properties.reply_to, durable=True)
+        self.response_channel.basic_publish(
+            exchange='',
+            routing_key=properties.reply_to,
+            body=response,
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # Persist message
+            )
+        )
 
     def callback(self, ch, method, properties, body):
         delivery_tag = method.delivery_tag
@@ -27,7 +43,11 @@ class TaskProcessor:
             future = executor.submit(self.process_task, body)
             try:
                 # Wait for the task to complete within 10 seconds
-                future.result(timeout=5)
+                response = future.result(timeout=5)
+                
+                # Send response if reply_to is specified
+                if properties.reply_to:
+                    self.send_response(response, properties)
                 # Acknowledge the message if the task is done within the timeout
                 ch.basic_ack(delivery_tag=delivery_tag)
             except TimeoutError:
@@ -46,6 +66,7 @@ class TaskProcessor:
 
     def close_connection(self):
         self.connection.close()
+        self.response_connection.close()
 
 if __name__ == "__main__":
     processor = TaskProcessor(queue_name='task_queue')

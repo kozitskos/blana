@@ -14,7 +14,8 @@ for i in range(100):
         routing_key='task_queue',
         body=message,
         properties=pika.BasicProperties(
-            delivery_mode=2,  # make message persistent
+            delivery_mode=2,
+            reply_to='task_queue'  # make message persistent
         ))
     print(f" [x] Sent {message}")
 
