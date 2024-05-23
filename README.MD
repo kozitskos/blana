@@ -50,7 +50,7 @@ myapp/
 1. **Clone the repository:**
 
 ```sh
-git clone https://github.com/your-username/fastapi-notes-app.git
+git clone https://github.com/kozitskos/blana.git
 cd fastapi-notes-app
 ```
 
