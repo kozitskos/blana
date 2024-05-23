@@ -13,7 +13,6 @@ This project is a FastAPI application where users can manage their notes, leave 
 - Create, read, and update notes
 - Leave feedback (comments and ratings) on notes
 - Real-time audio transcription using WebSockets and RabbitMQ
-- Uses UUIDs for user and note identifiers
 
 ## Project Structure
 
@@ -167,13 +166,7 @@ ws://localhost:8000/ws/socket.io
 }
 ```
 
-## Contributing
 
-Feel free to submit issues and enhancement requests.
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgements
 
