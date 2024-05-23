@@ -12,7 +12,7 @@ socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/ws/socket
 app.mount("/ws", socket_app)
 
 # Serve the static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Connection parameters for RabbitMQ
 RABBITMQ_URL = "amqp://guest:guest@localhost/"
