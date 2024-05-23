@@ -6,10 +6,11 @@ import aio_pika
 import asyncio
 from uuid import UUID
 
-from . import schemas, crud, models
-from .database import engine, SessionLocal
-from .deps import get_current_user
-from .routers import auth, notes, feedback
+from app import schemas, crud, models
+from app.database import engine, SessionLocal
+from app.deps import get_current_user
+from app.routers import auth, notes, feedback
+
 
 app = FastAPI()
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins="*")
@@ -18,8 +19,8 @@ socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/ws/socket
 # Mount the socket.io app
 app.mount("/ws", socket_app)
 
-# Serve the static files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# # Serve the static files
+# app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 
@@ -61,7 +62,7 @@ async def disconnect(sid):
 
 @sio.event
 async def message(sid, data):
-    print("Received message:", data)
+    print("Received message:", data[:50])
     note_id = UUID(data['note_id'])
     audio_data = data['audio']
     await send_message(audio_data, sid)
@@ -107,3 +108,8 @@ async def update_note_content(note_id: UUID, content: str):
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
 app.include_router(feedback.router, prefix="/notes", tags=["feedback"])
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

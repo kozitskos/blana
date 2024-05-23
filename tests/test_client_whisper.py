@@ -17,6 +17,7 @@ def connect():
     send_next_message()
     send_next_message()
     send_next_message()
+    
 
 @sio.event
 def response(data):

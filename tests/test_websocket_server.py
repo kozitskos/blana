@@ -51,7 +51,7 @@ async def disconnect(sid):
 
 @sio.event
 async def message(sid, data):
-    print("Received message:", data)
+    print("Received message:", data[:50])
     await send_message(data, sid)
     await receive_message(sid)
 

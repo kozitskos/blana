@@ -18,7 +18,7 @@ class Note(NoteBase):
     feedbacks: List['Feedback'] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class UserBase(BaseModel):
     username: str
@@ -31,7 +31,7 @@ class User(UserBase):
     notes: List[Note] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class FeedbackBase(BaseModel):
     comment: Optional[str] = None
@@ -46,4 +46,11 @@ class Feedback(FeedbackBase):
     author_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    username: Optional[str] = None

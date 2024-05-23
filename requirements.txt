@@ -12,3 +12,4 @@ python-socketio
 aiohttp
 fastapi-socketio
 faster_whisper
+python-jose

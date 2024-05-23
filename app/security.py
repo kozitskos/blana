@@ -2,8 +2,9 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from typing import Optional
+from uuid import UUID
 
-SECRET_KEY = "your_secret_key"
+SECRET_KEY = "GnOFAWAe/9xno/+N8cOoIVwz3KcFUpVF7Dm1ZmqWZ9k="
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

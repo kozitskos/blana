@@ -51,7 +51,7 @@ myapp/
 
 ```sh
 git clone https://github.com/kozitskos/blana.git
-cd fastapi-notes-app
+cd blana
 ```
 
 2. **Create and activate a virtual environment:**
