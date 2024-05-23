@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy
+alembic
+psycopg2-binary
+pydantic
+python-jose
+passlib[bcrypt]
+aio-pika
+socketio
+python-socketio
+aiohttp
+fastapi-socketio
