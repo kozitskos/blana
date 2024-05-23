@@ -61,7 +61,7 @@ class TaskProcessor:
             future = executor.submit(self.process_task, body)
             try:
                 # Wait for the task to complete within 10 seconds
-                response = future.result(timeout=10)
+                response = future.result(timeout=30)
                 
                 # Send response if reply_to is specified
                 if properties.reply_to:

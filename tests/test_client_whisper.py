@@ -8,17 +8,20 @@ sio = socketio.Client()
 with open("audio_base64.pkl", "rb") as pkl_file:
     base64_audio = pickle.load(pkl_file)
 
-messages = [base64_audio] * 4  # Repeat the base64 audio 4 times
+messages = [base64_audio] * 10  # Repeat the base64 audio 4 times
 current_message_index = 0
 
 @sio.event
 def connect():
     print("Connected to server")
     send_next_message()
+    send_next_message()
+    send_next_message()
 
 @sio.event
 def response(data):
     print("Message from server:", data)
+    send_next_message()
     send_next_message()
 
 @sio.event
