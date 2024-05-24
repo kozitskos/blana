@@ -75,7 +75,7 @@ async def connect(sid, environ, auth):
         
         user = get_current_user(db, token)
         if user:
-            await sio.save_session(sid, {'user_id': user.id, 'username': user.username})
+            await sio.save_session(sid, {'user_id': user.id})
             await create_response_queue(sid)
             print(f'user {user.id} connected')
         else:
