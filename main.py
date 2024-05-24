@@ -20,7 +20,8 @@ from fastapi.security import OAuth2PasswordBearer
 from app import schemas, crud, models
 from app.database import engine, SessionLocal
 from app.deps import get_current_user, oauth2_scheme
-from app.routers import auth, notes, feedback, summaries
+from app.routers import notes, feedback, summaries
+from app.routers import auth as authorization
 
 app = FastAPI()
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins="*")
@@ -57,18 +58,17 @@ async def on_shutdown():
     if rabbitmq_connection:
         await rabbitmq_connection.close()
 
-# @sio.event
-# async def connect(sid, environ):
-#     print("Client connected:", sid)
-#     await create_response_queue(sid)
-
+        
 @sio.event
-async def connect(sid, environ, auth):
+async def connect(sid, environ):
+    auth = environ.get('HTTP_AUTHORIZATION', None)
+    if auth is None:
+        await sio.disconnect(sid)
+        return
+    token = auth.replace('Bearer ', '')
     db: Session = SessionLocal()
     try:
         print('connect ', sid)
-        token = auth.get('token', '').replace('Bearer ', '')
-        print(token)
         if not token:
             await sio.disconnect(sid)
             return
@@ -82,6 +82,57 @@ async def connect(sid, environ, auth):
             await sio.disconnect(sid)
     finally:
         db.close()
+
+# @sio.event
+# async def connect(sid, environ):
+#     print("Client connected:", sid)
+#     await create_response_queue(sid)
+
+# @sio.event
+# async def connect(sid, environ, auth):
+#     db: Session = SessionLocal()
+#     try:
+#         print('connect ', sid)
+#         print(auth)
+#         token = auth.get('token', '').replace('Bearer ', '')
+#         # print(token)
+#         if not token:
+#             await sio.disconnect(sid)
+#             return
+        
+#         user = get_current_user(db, token)
+#         if user:
+#             await sio.save_session(sid, {'user_id': user.id})
+#             await create_response_queue(sid)
+#             print(f'user {user.id} connected')
+#         else:
+#             await sio.disconnect(sid)
+#     finally:
+#         db.close()
+
+# @sio.event
+# async def connect(sid, environ, auth):
+#     if auth is None:
+#         await sio.disconnect(sid)
+#         return
+#     db: Session = SessionLocal()
+#     try:
+#         print('connect ', sid)
+#         token = auth.get('token', '').replace('Bearer ', '')
+#         if not token:
+#             await sio.disconnect(sid)
+#             return
+        
+#         user = get_current_user(db, token)
+#         if user:
+#             await sio.save_session(sid, {'user_id': user.id, 'username': user.username})
+#             db.query(models.User).filter(models.User.id == user.id).update({models.User.online: True})
+#             db.commit()
+#             print(f'user {user.id} connected')
+#         else:
+#             await sio.disconnect(sid)
+#     finally:
+#         db.close()
 
 @sio.event
 async def disconnect(sid):
@@ -165,15 +216,17 @@ async def receive_message(sid, note_id):
                 async with message.process():
                     response = message.body.decode()
                     await sio.emit('response', response, to=sid)
-                    await update_note_content(note_id, response)
+                    # await update_note_content(note_id, response)
                     return
 
 async def update_note_content(note_id: UUID, content: str):
-    async with SessionLocal() as db:
+    db: Session = SessionLocal()
+    try:
         await asyncio.get_event_loop().run_in_executor(None, crud.update_note_content, db, note_id, content)
-
+    finally:
+        db.close()
 # Include the routers
-app.include_router(auth.router, prefix="/auth", tags=["auth"])
+app.include_router(authorization.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 app.include_router(summaries.router, prefix="/summary", tags=["summary"])
