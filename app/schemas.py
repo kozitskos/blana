@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, conint
 from typing import List, Optional
 from uuid import UUID
 
@@ -16,6 +16,7 @@ class Note(NoteBase):
     id: UUID
     owner_id: UUID
     feedbacks: List['Feedback'] = []
+    summaries: List['Summary'] = []
 
     class Config:
         from_attributes = True
@@ -35,12 +36,26 @@ class User(UserBase):
 
 class FeedbackBase(BaseModel):
     comment: Optional[str] = None
-    rating: Optional[float] = None
+    rating: Optional[conint(ge=0, le=5)] = None
 
 class FeedbackCreate(FeedbackBase):
     pass
 
 class Feedback(FeedbackBase):
+    id: UUID
+    note_id: UUID
+    author_id: UUID
+
+    class Config:
+        from_attributes = True
+
+class SummaryBase(BaseModel):
+    content: str
+
+class SummaryCreate(SummaryBase):
+    pass
+
+class Summary(SummaryBase):
     id: UUID
     note_id: UUID
     author_id: UUID

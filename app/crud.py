@@ -44,3 +44,13 @@ def create_feedback(db: Session, feedback: schemas.FeedbackCreate, note_id: UUID
     db.commit()
     db.refresh(db_feedback)
     return db_feedback
+
+def create_summary(db: Session, summary: schemas.SummaryCreate, note_id: UUID, user_id: UUID):
+    db_summary = models.Summary(**summary.dict(), note_id=note_id, author_id=user_id)
+    db.add(db_summary)
+    db.commit()
+    db.refresh(db_summary)
+    return db_summary
+
+def get_summaries(db: Session, note_id: UUID):
+    return db.query(models.Summary).filter(models.Summary.note_id == note_id).all()

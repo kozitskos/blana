@@ -1,5 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
-from fastapi.staticfiles import StaticFiles
+# from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 import socketio
 import aio_pika
@@ -9,8 +9,7 @@ from uuid import UUID
 from app import schemas, crud, models
 from app.database import engine, SessionLocal
 from app.deps import get_current_user
-from app.routers import auth, notes, feedback
-
+from app.routers import auth, notes, feedback, summaries
 
 app = FastAPI()
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins="*")
@@ -19,11 +18,8 @@ socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/ws/socket
 # Mount the socket.io app
 app.mount("/ws", socket_app)
 
-# # Serve the static files
+# Serve the static files
 # app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
-
 
 # Connection parameters for RabbitMQ
 RABBITMQ_URL = "amqp://guest:guest@localhost/"
@@ -62,7 +58,7 @@ async def disconnect(sid):
 
 @sio.event
 async def message(sid, data):
-    print("Received message:", data[:50])
+    print("Received message:", data)
     note_id = UUID(data['note_id'])
     audio_data = data['audio']
     await send_message(audio_data, sid)
@@ -96,8 +92,8 @@ async def receive_message(sid, note_id):
             async for message in queue_iter:
                 async with message.process():
                     response = message.body.decode()
-                    await update_note_content(note_id, response)
                     await sio.emit('response', response, to=sid)
+                    await update_note_content(note_id, response)
                     return
 
 async def update_note_content(note_id: UUID, content: str):
@@ -108,6 +104,7 @@ async def update_note_content(note_id: UUID, content: str):
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
 app.include_router(feedback.router, prefix="/notes", tags=["feedback"])
+app.include_router(summaries.router, prefix="/notes", tags=["summaries"])
 
 
 if __name__ == "__main__":
