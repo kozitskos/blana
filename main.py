@@ -6,9 +6,20 @@ import aio_pika
 import asyncio
 from uuid import UUID
 
+from fastapi import FastAPI, Depends, HTTPException
+from fastapi.openapi.utils import get_openapi
+from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, OAuth2 as OAuth2Model, SecuritySchemeType
+from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
+import socketio
+import aio_pika
+import asyncio
+from uuid import UUID
+from fastapi.security import OAuth2PasswordBearer
+
 from app import schemas, crud, models
 from app.database import engine, SessionLocal
-from app.deps import get_current_user
+from app.deps import get_current_user, oauth2_scheme
 from app.routers import auth, notes, feedback, summaries
 
 app = FastAPI()
@@ -105,6 +116,91 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 app.include_router(summaries.router, prefix="/summary", tags=["summary"])
+
+# # Add security scheme for Swagger
+# app.openapi_schema = {
+#     "components": {
+#         "securitySchemes": {
+#             "BearerAuth": {
+#                 "type": "http",
+#                 "scheme": "bearer",
+#                 "bearerFormat": "JWT"
+#             }
+#         }
+#     },
+#     "security": [{
+#         "BearerAuth": []
+#     }]
+# }
+
+
+
+
+# # Define security schemes
+# from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel, OAuth2 as OAuth2Model
+# from fastapi.openapi.models import SecuritySchemeType
+
+# oauth2_scheme = OAuth2Model(
+#     flows=OAuthFlowsModel(
+#         password={
+#             "tokenUrl": "/auth/token",
+#             "scopes": {}
+#         }
+#     )
+# )
+
+# app.openapi_schema["components"]["securitySchemes"] = {
+#     "BearerAuth": {
+#         "type": SecuritySchemeType.oauth2,
+#         "flows": {
+#             "password": {
+#                 "tokenUrl": "/auth/token",
+#                 "scopes": {}
+#             }
+#         }
+#     }
+# }
+
+# @app.get("/openapi.json", include_in_schema=False)
+# async def openapi():
+#     return app.openapi()
+
+# @app.get("/", include_in_schema=False)
+# async def custom_swagger_ui_html():
+#     return get_swagger_ui_html(
+#         openapi_url="/openapi.json",
+#         title=app.title + " - Swagger UI",
+#         oauth2_redirect_url=app.swagger_ui_oauth2_redirect_url,
+#         init_oauth={
+#             "clientId": "default",
+#             "appName": app.title,
+#             "scopes": "read:notes write:notes"
+#         },
+#     )
+
+
+# # Custom OpenAPI generation
+# def custom_openapi():
+#     if app.openapi_schema:
+#         return app.openapi_schema
+#     openapi_schema = get_openapi(
+#         title="Your API Title",
+#         version="1.0.0",
+#         description="Your API Description",
+#         routes=app.routes,
+#     )
+#     openapi_schema["components"]["securitySchemes"] = {
+#         "BearerAuth": {
+#             "type": "http",
+#             "scheme": "bearer",
+#             "bearerFormat": "JWT"
+#         }
+#     }
+#     openapi_schema["security"] = [{"BearerAuth": []}]
+#     app.openapi_schema = openapi_schema
+#     return app.openapi_schema
+
+# app.openapi = custom_openapi
 
 if __name__ == "__main__":
     import uvicorn

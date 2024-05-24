@@ -57,3 +57,12 @@ def get_feedback(db: Session, note_id: UUID):
 
 def get_summary(db: Session, note_id: UUID):
     return db.query(models.Summary).filter(models.Summary.note_id == note_id).first()
+
+    
+def update_summary(db: Session, summary_id: UUID, summary_update: schemas.SummaryCreate):
+    summary = db.query(models.Summary).filter(models.Summary.id == summary_id).first()
+    if summary:
+        summary.content = summary_update.content
+        db.commit()
+        db.refresh(summary)
+    return summary

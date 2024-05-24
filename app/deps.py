@@ -4,8 +4,10 @@ from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 from uuid import UUID
 from . import models, database, schemas, security, crud
+from fastapi import Depends, HTTPException, status
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
 def get_db():
     db = database.SessionLocal()
@@ -32,3 +34,6 @@ def get_current_user(db: Session = Depends(get_db), token: str = Depends(oauth2_
     if user is None:
         raise credentials_exception
     return user
+
+
+
