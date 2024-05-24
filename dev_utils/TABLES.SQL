@@ -32,3 +32,5 @@ CREATE TABLE summaries (
     note_id UUID REFERENCES notes(id) ON DELETE CASCADE,
     author_id UUID REFERENCES users(id) ON DELETE CASCADE
 );
+
+

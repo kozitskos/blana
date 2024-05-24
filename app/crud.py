@@ -52,5 +52,8 @@ def create_summary(db: Session, summary: schemas.SummaryCreate, note_id: UUID, u
     db.refresh(db_summary)
     return db_summary
 
-def get_summaries(db: Session, note_id: UUID):
-    return db.query(models.Summary).filter(models.Summary.note_id == note_id).all()
+def get_feedback(db: Session, note_id: UUID):
+    return db.query(models.Feedback).filter(models.Feedback.note_id == note_id).first()
+
+def get_summary(db: Session, note_id: UUID):
+    return db.query(models.Summary).filter(models.Summary.note_id == note_id).first()

@@ -103,9 +103,8 @@ async def update_note_content(note_id: UUID, content: str):
 # Include the routers
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
-app.include_router(feedback.router, prefix="/notes", tags=["feedback"])
-app.include_router(summaries.router, prefix="/notes", tags=["summaries"])
-
+app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
+app.include_router(summaries.router, prefix="/summary", tags=["summary"])
 
 if __name__ == "__main__":
     import uvicorn

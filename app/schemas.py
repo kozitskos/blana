@@ -1,5 +1,5 @@
 from pydantic import BaseModel, conint
-from typing import List, Optional
+from typing import Optional
 from uuid import UUID
 
 class NoteBase(BaseModel):
@@ -15,8 +15,8 @@ class NoteUpdate(BaseModel):
 class Note(NoteBase):
     id: UUID
     owner_id: UUID
-    feedbacks: List['Feedback'] = []
-    summaries: List['Summary'] = []
+    feedback: Optional['Feedback'] = None
+    summary: Optional['Summary'] = None
 
     class Config:
         from_attributes = True
@@ -29,7 +29,7 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: UUID
-    notes: List[Note] = []
+    notes: list[Note] = []
 
     class Config:
         from_attributes = True
