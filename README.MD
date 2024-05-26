@@ -166,6 +166,11 @@ ws://localhost:8000/ws/socket.io
 }
 ```
 
+### Docker
+
+If you want to use docker, you may build your container
+Build your container `docker build -t blana_container .`
+Then you run your container `docker run -p 80:80 blana_container `
 
 
 ## Acknowledgements

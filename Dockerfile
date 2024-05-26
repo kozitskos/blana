@@ -14,4 +14,4 @@ RUN pip install --upgrade pip \
 
 CMD ["alembic", "upgrade", "head"]
 
-CMD ["uvicorn", "app.main:app", "--reload"]
+CMD ["uvicorn", "main:app", "--reload"]
