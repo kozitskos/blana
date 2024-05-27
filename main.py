@@ -24,7 +24,6 @@ from app.routers import notes, feedback, summaries
 from app.routers import auth as authorization
 from websockets_transcriber.events import sio, setup_rabbitmq
 
-
 app = FastAPI()
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/ws/socket.io')
 
@@ -33,8 +32,6 @@ app.mount("/ws", socket_app)
 
 # Serve the static files
 # app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
 
 @app.on_event("startup")
 async def on_startup():
@@ -45,14 +42,11 @@ async def on_shutdown():
     if rabbitmq_connection:
         await rabbitmq_connection.close()
 
-
-
 # Include the routers
 app.include_router(authorization.router, prefix="/auth", tags=["auth"])
 app.include_router(notes.router, prefix="/notes", tags=["notes"])
 app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 app.include_router(summaries.router, prefix="/summary", tags=["summary"])
-
 
 if __name__ == "__main__":
     import uvicorn
