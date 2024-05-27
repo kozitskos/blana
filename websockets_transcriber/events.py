@@ -20,19 +20,12 @@ RESPONSE_QUEUE_PREFIX = "response_queue_"
 # Global variable for the RabbitMQ connection
 rabbitmq_connection = None
 
-
-
-
-
 async def setup_rabbitmq():
     global rabbitmq_connection
     rabbitmq_connection = await aio_pika.connect_robust(RABBITMQ_URL)
     channel = await rabbitmq_connection.channel()
     await channel.declare_queue(REQUEST_QUEUE, durable=True)
 
-
-
-        
 @sio.event
 async def connect(sid, environ):
     auth = environ.get('HTTP_AUTHORIZATION', None)
@@ -112,7 +105,6 @@ async def connect(sid, environ):
 async def disconnect(sid):
     print("Client disconnected:", sid)
     await delete_response_queue(sid)
-
 
 @sio.event
 async def set_note_id(sid, data):
