@@ -1,6 +1,17 @@
+
 from pydantic import BaseModel, conint
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
+
+
+class NoteUpdateFull(BaseModel):
+    title: str
+    content: str
+
+class NoteUpdate(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
 
 class NoteBase(BaseModel):
     title: str
@@ -8,31 +19,6 @@ class NoteBase(BaseModel):
 
 class NoteCreate(NoteBase):
     pass
-
-class NoteUpdate(BaseModel):
-    content: Optional[str] = None
-
-class Note(NoteBase):
-    id: UUID
-    owner_id: UUID
-    feedback: Optional['Feedback'] = None
-    summary: Optional['Summary'] = None
-
-    class Config:
-        from_attributes = True
-
-class UserBase(BaseModel):
-    username: str
-
-class UserCreate(UserBase):
-    password: str
-
-class User(UserBase):
-    id: UUID
-    notes: list[Note] = []
-
-    class Config:
-        from_attributes = True
 
 class FeedbackBase(BaseModel):
     comment: Optional[str] = None
@@ -63,9 +49,33 @@ class Summary(SummaryBase):
     class Config:
         from_attributes = True
 
+class Note(NoteBase):
+    id: UUID
+    owner_id: UUID
+    created_at: datetime
+    feedback: Optional['Feedback'] = None
+    summary: Optional['Summary'] = None
+
+    class Config:
+        from_attributes = True
+
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
+
+class User(UserBase):
+    id: UUID
+    notes: list[Note] = []
+
+    class Config:
+        from_attributes = True
+
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+

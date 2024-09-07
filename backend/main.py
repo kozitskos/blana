@@ -20,11 +20,25 @@ from fastapi.security import OAuth2PasswordBearer
 from app import schemas, crud, models
 from app.database import engine, SessionLocal
 from app.deps import get_current_user, oauth2_scheme
-from app.routers import notes, feedback, summaries
-from app.routers import auth as authorization
+
 from websockets_transcriber.events import sio, setup_rabbitmq
+from fastapi.middleware.cors import CORSMiddleware
+
+
+from app.controllers import note_controller, feedback_controller, auth_controller, summary_controller
+
+
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Allow requests from Next.js
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 socket_app = socketio.ASGIApp(sio, other_asgi_app=app, socketio_path='/ws/socket.io')
 
 # Mount the socket.io app
@@ -42,11 +56,11 @@ async def on_shutdown():
     if rabbitmq_connection:
         await rabbitmq_connection.close()
 
-# Include the routers
-app.include_router(authorization.router, prefix="/auth", tags=["auth"])
-app.include_router(notes.router, prefix="/notes", tags=["notes"])
-app.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
-app.include_router(summaries.router, prefix="/summary", tags=["summary"])
+# Include all the routers
+app.include_router(auth_controller.router, prefix="/auth", tags=["auth"])
+app.include_router(note_controller.router, prefix="/notes", tags=["notes"])
+app.include_router(feedback_controller.router, prefix="/feedback", tags=["feedback"])
+app.include_router(summary_controller.router, prefix="/summary", tags=["summary"])  # Added summary controller
 
 if __name__ == "__main__":
     import uvicorn

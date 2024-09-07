@@ -1,8 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy import Column, String, ForeignKey, Integer, Text, UniqueConstraint, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from .database import Base
+from datetime import datetime
 
 class User(Base):
     __tablename__ = 'users'
@@ -18,6 +19,7 @@ class Note(Base):
     title = Column(String, index=True)
     content = Column(Text)
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+    created_at = Column(DateTime, default=func.now(), nullable=False)  # Added created_at column
 
     owner = relationship("User", back_populates="notes")
     feedback = relationship("Feedback", uselist=False, back_populates="note", cascade="all, delete-orphan")

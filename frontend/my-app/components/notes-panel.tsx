@@ -1,0 +1,509 @@
+import { useState, useEffect, useRef } from 'react'
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { PlusCircle, Trash2, Moon, Sun, MoreVertical, Mic, Square, Menu, Settings, LogOut, Star } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { fetchNotes, createNote, updateNote, deleteNoteById, patchNote } from '@/components/api//notes-api' // Importing the backend API functions
+
+interface Feedback {
+  comment: string;
+  rating: number;
+  id: string;
+  note_id: string;
+  author_id: string;
+}
+
+interface Summary {
+  content: string;
+  id: string;
+  note_id: string;
+  author_id: string;
+}
+
+interface Note {
+  title: string;
+  content: string;
+  id: string;
+  owner_id: string;
+  created_at: string;
+  feedback: Feedback | null;
+  summary: Summary | null;
+}
+
+export function NotesPanel() {
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [darkMode, setDarkMode] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [feedback, setFeedback] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingContent, setIsEditingContent] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const { toast } = useToast();
+
+  // Fetch notes on component mount
+  useEffect(() => {
+    const loadNotes = async () => {
+      try {
+        const fetchedNotes = await fetchNotes();
+        setNotes(fetchedNotes);
+        setSelectedNote(fetchedNotes[0] || null); // Select the first note by default
+      } catch (error) {
+        console.error('Failed to fetch notes:', error);
+      }
+    };
+
+    loadNotes();
+  }, []);
+
+  // Handle dark mode toggle
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [darkMode]);
+
+  // Focus title input when editing
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+    }
+  }, [isEditingTitle]);
+
+  // Focus content textarea when editing
+  useEffect(() => {
+    if (isEditingContent && contentTextareaRef.current) {
+      contentTextareaRef.current.focus();
+    }
+  }, [isEditingContent]);
+
+  // Create a new note
+  const handleCreateNote = async () => {
+    try {
+      const newNote = await createNote({
+        title: 'New Note',
+        content: 'Start typing your note here...'
+      });
+      setNotes((prevNotes) => [newNote, ...prevNotes]);
+      setSelectedNote(newNote);
+      toast({
+        title: 'Success',
+        description: 'New note created successfully.'
+      });
+    } catch (error) {
+      console.error('Failed to create note:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create note.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Update note (PATCH title or content)
+  const handleUpdateNote = async (id: string, updates: Partial<Note>) => {
+    try {
+      const updatedNote = await patchNote(id, updates);
+      const updatedNotes = notes.map(note => 
+        note.id === id ? { ...note, ...updates } : note
+      );
+      setNotes(updatedNotes);
+      setSelectedNote(updatedNote);
+      toast({
+        title: 'Success',
+        description: 'Note updated successfully.'
+      });
+    } catch (error) {
+      console.error('Failed to update note:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update note.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Delete note
+  const handleDeleteNote = async (id: string) => {
+    try {
+      await deleteNoteById(id);
+      const updatedNotes = notes.filter(note => note.id !== id);
+      setNotes(updatedNotes);
+      setSelectedNote(updatedNotes[0] || null);
+      toast({
+        title: 'Success',
+        description: 'Note deleted successfully.'
+      });
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete note.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  // Handle title change
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (selectedNote) {
+      const updatedNote = { ...selectedNote, title: e.target.value };
+      setSelectedNote(updatedNote);
+    }
+  };
+
+  const handleTitleBlur = () => {
+    setIsEditingTitle(false);
+    if (selectedNote) {
+      handleUpdateNote(selectedNote.id, { title: selectedNote.title });
+    }
+  };
+
+  // Handle title key down
+  const handleTitleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setIsEditingTitle(false);
+      if (selectedNote) {
+        handleUpdateNote(selectedNote.id, { title: selectedNote.title });
+      }
+    }
+  };
+
+  // Handle content change
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (selectedNote) {
+      const updatedNote = { ...selectedNote, content: e.target.value };
+      setSelectedNote(updatedNote);
+    }
+  };
+
+  const handleContentBlur = () => {
+    setIsEditingContent(false);
+    if (selectedNote) {
+      handleUpdateNote(selectedNote.id, { content: selectedNote.content });
+    }
+  };
+
+  // Toggle transcription (mock functionality)
+  const toggleTranscribe = () => {
+    setIsTranscribing(!isTranscribing);
+    if (!isTranscribing) {
+      console.log("Starting transcription...");
+    } else {
+      console.log("Stopping transcription...");
+    }
+  };
+
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const toggleDarkMode = () => {
+    setDarkMode(!darkMode);
+  };
+
+  // Handle rating for feedback
+  const handleRating = (value: number) => {
+    setRating(value);
+  };
+
+  // Submit feedback
+  const handleFeedbackSubmit = () => {
+    if (selectedNote) {
+      const newFeedback: Feedback = {
+        comment: feedback,
+        rating: rating,
+        id: Date.now().toString(),
+        note_id: selectedNote.id,
+        author_id: selectedNote.owner_id,
+      };
+      const updatedNote = { ...selectedNote, feedback: newFeedback };
+      const updatedNotes = notes.map(note => note.id === selectedNote.id ? updatedNote : note);
+      setNotes(updatedNotes);
+      setSelectedNote(updatedNote);
+      setRating(0);
+      setFeedback("");
+      setIsModalOpen(false);
+      toast({
+        title: "Success",
+        description: "Feedback submitted successfully.",
+      });
+    }
+  };
+
+  // Filtered notes based on search term
+  const filteredNotes = notes.filter(note =>
+    note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    note.content.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="flex h-screen flex-col bg-white dark:bg-black text-gray-900 dark:text-gray-100">
+      <header className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-4 py-2 bg-white dark:bg-gray-900">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400 lg:hidden" onClick={toggleSidebar}>
+            <Menu className="h-4 w-4" />
+          </Button>
+          <h1 className="text-lg font-semibold">Notes</h1>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="icon" onClick={toggleDarkMode} className="text-gray-500 dark:text-gray-400">
+            {darkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+          <Button variant="ghost" size="icon" className="text-gray-500 dark:text-gray-400" onClick={handleCreateNote}>
+            <PlusCircle className="h-4 w-4" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/placeholder.svg" alt="User" />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">John Doe</p>
+                  <p className="text-xs leading-none text-muted-foreground">john@example.com</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+      <div className="flex flex-1 overflow-hidden">
+        <aside className={`w-full lg:w-1/3 border-r border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-900 flex flex-col ${isSidebarOpen ? 'block' : 'hidden'} lg:block absolute lg:relative z-10`}>
+          <div className="p-4">
+            <Input
+              type="search"
+              placeholder="Search notes..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full"
+            />
+          </div>
+          <ScrollArea className="flex-1">
+            {filteredNotes.map((note) => (
+              <div
+                key={note.id}
+                className={`p-4 cursor-pointer ${
+                  selectedNote?.id === note.id ? 'bg-gray-200 dark:bg-gray-800' : ''
+                }`}
+                onClick={() => {
+                  setSelectedNote(note)
+                  if (window.innerWidth < 1024) {
+                    setIsSidebarOpen(false)
+                  }
+                }}
+              >
+                <h3 className="font-semibold">{note.title}</h3>
+                <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                  {new Date(note.created_at).toLocaleDateString()}
+                </p>
+              </div>
+            ))}
+          </ScrollArea>
+        </aside>
+        <main className="flex-1 flex flex-col bg-white dark:bg-black">
+          <ScrollArea className="flex-1 p-6">
+            {selectedNote ? (
+              <>
+                <div className="flex justify-between items-center mb-4">
+                  {isEditingTitle ? (
+                    <Input
+                      ref={titleInputRef}
+                      value={selectedNote.title}
+                      onChange={handleTitleChange}
+                      onBlur={handleTitleBlur}
+                      onKeyDown={handleTitleKeyDown}
+                      className="text-2xl font-bold"
+                    />
+                  ) : (
+                    <h2 
+                      className="text-2xl font-bold cursor-pointer" 
+                      onDoubleClick={() => setIsEditingTitle(true)}
+                    >
+                      {selectedNote.title}
+                    </h2>
+                  )}
+                  <div className="flex space-x-2">
+                    <Button variant="ghost" size="icon">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDeleteNote(selectedNote.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  Created: {new Date(selectedNote.created_at).toLocaleString()}
+                </p>
+                <Button 
+                  onClick={toggleTranscribe}
+                  className="mb-4"
+                  variant={isTranscribing ? "destructive" : "default"}
+                >
+                  {isTranscribing ? (
+                    <>
+                      <Square className="mr-2 h-4 w-4" />
+                      Stop transcribe
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="mr-2 h-4 w-4" />
+                      Start to transcribe
+                    </>
+                  )}
+                </Button>
+                <div className="flex space-x-2 mb-4">
+                  <Button
+                    variant={showSummary ? "outline" : "default"}
+                    onClick={() => setShowSummary(false)}
+                  >
+                    Content
+                  </Button>
+                  <Button
+                    variant={showSummary ? "default" : "outline"}
+                    onClick={() => {
+                      setShowSummary(true)
+                      if (!selectedNote.summary) {
+                        createSummary()
+                      }
+                    }}
+                  >
+                    Summary
+                  </Button>
+                </div>
+                <Separator className="my-4" />
+                <div className="space-y-4">
+                  {showSummary ? (
+                    <p className="whitespace-pre-wrap">
+                      {selectedNote.summary ? selectedNote.summary.content : "No summary available."}
+                    </p>
+                  ) : (
+                    isEditingContent ? (
+                      <Textarea
+                        ref={contentTextareaRef}
+                        value={selectedNote.content}
+                        onChange={handleContentChange}
+                        onBlur={handleContentBlur}
+                        className="min-h-[200px]"
+                      />
+                    ) : (
+                      <p 
+                        className="whitespace-pre-wrap cursor-pointer" 
+                        onDoubleClick={() => setIsEditingContent(true)}
+                      >
+                        {selectedNote.content}
+                      </p>
+                    )
+                  )}
+                  {showSummary && (
+                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">
+                          {selectedNote.feedback ? "Update Feedback" : "Provide Feedback"}
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                          <DialogTitle>Feedback</DialogTitle>
+                          <DialogDescription>
+                            Please rate the summary and provide your feedback.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="flex items-center justify-center space-x-2">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <button
+                                key={star}
+                                onClick={() => handleRating(star)}
+                                className={`text-2xl ${
+                                  star <= rating ? 'text-yellow-400' : 'text-gray-300'
+                                }`}
+                              >
+                                <Star className="h-6 w-6" fill={star <= rating ? 'currentColor' : 'none'} />
+                              </button>
+                            ))}
+                          </div>
+                          <Textarea
+                            placeholder="Your feedback..."
+                            value={feedback}
+                            onChange={(e) => setFeedback(e.target.value)}
+                          />
+                        </div>
+                        <div className="flex justify-end">
+                          <Button onClick={handleFeedbackSubmit}>Submit Feedback</Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+                  {selectedNote.feedback && (
+                    <div className="mt-4 p-4 bg-gray-100 dark:bg-gray-800 rounded-md">
+                      <h3 className="font-semibold mb-2">Feedback</h3>
+                      <p>{selectedNote.feedback.comment}</p>
+                      <div className="flex items-center mt-2">
+                        <span className="mr-2">Rating:</span>
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`h-4 w-4 ${
+                              star <= selectedNote.feedback!.rating ? 'text-yellow-400' : 'text-gray-300'
+                            }`}
+                            fill={star <= selectedNote.feedback!.rating ? 'currentColor' : 'none'}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-center text-gray-500 dark:text-gray-400 mt-8">Select a note to view its contents</p>
+            )}
+          </ScrollArea>
+        </main>
+      </div>
+    </div>
+  )
+}
