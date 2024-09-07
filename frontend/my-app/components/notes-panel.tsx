@@ -24,6 +24,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { PlusCircle, Trash2, Moon, Sun, MoreVertical, Mic, Square, Menu, Settings, LogOut, Star } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { fetchNotes, createNote, updateNote, deleteNoteById, patchNote } from '@/components/api//notes-api' // Importing the backend API functions
+import { generateCelebrityName } from '@/lib/generateCelebrityName';
+
 
 interface Feedback {
   comment: string;
@@ -109,7 +111,7 @@ export function NotesPanel() {
   const handleCreateNote = async () => {
     try {
       const newNote = await createNote({
-        title: 'New Note',
+        title: generateCelebrityName(),
         content: 'Start typing your note here...'
       });
       setNotes((prevNotes) => [newNote, ...prevNotes]);
